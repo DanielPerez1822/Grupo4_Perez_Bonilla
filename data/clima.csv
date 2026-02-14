@@ -1,4 +1,3 @@
 ciudad,pais,latitud,longitud,temperatura,sensacion_termica,humedad,velocidad_viento,descripcion,fecha_extraccion,codigo_tiempo
-Bogota,Colombia,4.600,-74.083,13,13,100,5,Partly cloudy,2026-02-13T20:44:58.776078,116
-Cali,Colombia,3.437,-76.523,19,19,94,4,Partly cloudy,2026-02-13T20:44:59.807701,116
-Cartagena,Colombia,10.400,-75.514,27,31,84,31,Patchy rain nearby,2026-02-13T20:45:01.464288,176
+Bogota,Colombia,4.600,-74.083,13,13,100,5,Partly cloudy,2026-02-13T20:50:15.982132,116
+Barranquilla,Colombia,10.964,-74.796,27,31,84,32,Partly cloudy,2026-02-13T20:50:17.363946,116

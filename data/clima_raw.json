@@ -9,33 +9,20 @@
     "humedad": 100,
     "velocidad_viento": 5,
     "descripcion": "Partly cloudy",
-    "fecha_extraccion": "2026-02-13T20:44:58.776078",
+    "fecha_extraccion": "2026-02-13T20:50:15.982132",
     "codigo_tiempo": 116
   },
   {
-    "ciudad": "Cali",
+    "ciudad": "Barranquilla",
     "pais": "Colombia",
-    "latitud": "3.437",
-    "longitud": "-76.523",
-    "temperatura": 19,
-    "sensacion_termica": 19,
-    "humedad": 94,
-    "velocidad_viento": 4,
-    "descripcion": "Partly cloudy",
-    "fecha_extraccion": "2026-02-13T20:44:59.807701",
-    "codigo_tiempo": 116
-  },
-  {
-    "ciudad": "Cartagena",
-    "pais": "Colombia",
-    "latitud": "10.400",
-    "longitud": "-75.514",
+    "latitud": "10.964",
+    "longitud": "-74.796",
     "temperatura": 27,
     "sensacion_termica": 31,
     "humedad": 84,
-    "velocidad_viento": 31,
-    "descripcion": "Patchy rain nearby",
-    "fecha_extraccion": "2026-02-13T20:45:01.464288",
-    "codigo_tiempo": 176
+    "velocidad_viento": 32,
+    "descripcion": "Partly cloudy",
+    "fecha_extraccion": "2026-02-13T20:50:17.363946",
+    "codigo_tiempo": 116
   }
 ]
