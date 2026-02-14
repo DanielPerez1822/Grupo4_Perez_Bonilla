@@ -1,3 +1,4 @@
 ciudad,pais,latitud,longitud,temperatura,sensacion_termica,humedad,velocidad_viento,descripcion,fecha_extraccion,codigo_tiempo
-Bogota,Colombia,4.600,-74.083,13,13,100,5,Partly cloudy,2026-02-13T20:50:15.982132,116
-Barranquilla,Colombia,10.964,-74.796,27,31,84,32,Partly cloudy,2026-02-13T20:50:17.363946,116
+Bogota,Colombia,4.600,-74.083,13,14,100,4,Partly cloudy,2026-02-13T21:04:06.157780,116
+Medellin,Colombia,6.291,-75.536,16,16,82,4,Partly cloudy,2026-02-13T21:04:06.889620,116
+Barranquilla,Colombia,10.964,-74.796,27,31,84,33,Partly cloudy,2026-02-13T21:04:07.914655,116

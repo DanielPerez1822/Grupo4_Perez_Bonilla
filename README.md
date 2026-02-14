@@ -33,7 +33,7 @@ entorno.
 1. Clona el repositorio:
 
 ```bash
-git clone https://github.com/tu_usuario/etl-weatherstack.git
+git clone https://github.com/DanielPerez1822/Grupo4_Perez_Bonilla.git
 cd etl-weatherstack
 ```
 
@@ -71,7 +71,6 @@ Dependiendo de la implementación, los scripts pueden generar la salida en
 
 - `data/clima.csv` — Datos procesados en formato tabular (CSV).
 - `data/clima_raw.json` — Respuesta original de la API (JSON).
-- `data/clima_analysis.png` — Gráficas de análisis generadas.
 - `logs/etl.log` — Archivo de logging con información de la ejecución.
 
 ## Estructura del proyecto
@@ -81,8 +80,7 @@ etl-weatherstack/
 ├── scripts/            # Extraer, transformar y visualizar
 │   ├── extractor.py
 │   ├── transformador.py
-│   └── visualizador.py
-├── data/               # Salida: CSV, JSON, PNG
+├── data/               # Salida: CSV, JSON
 ├── logs/               # Archivos de log
 ├── .env                # Variables de entorno (excluded from VCS)
 ├── requirements.txt
@@ -115,4 +113,3 @@ Se agradecen mejoras. Flujo recomendado:
 ---
 **Última actualización:** Febrero 2026
 **Estado:** En desarrollo
-
