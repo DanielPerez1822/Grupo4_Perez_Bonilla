@@ -3,6 +3,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("logs/visualizador.log"),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 # Cargar datos
 df = pd.read_csv('data/clima.csv')
 
