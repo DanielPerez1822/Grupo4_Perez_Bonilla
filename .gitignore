@@ -24,3 +24,13 @@ Thumbs.db
 
 # Archivos de pruebas
 .pytest_cache/
+
+
+
+# Carpeta de logs del proyecto
+logs/
+
+# Archivos generados por el ETL / visualizador
+data/*.csv
+data/*.json
+data/*.png
