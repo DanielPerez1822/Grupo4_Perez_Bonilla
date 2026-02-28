@@ -1,0 +1,41 @@
+[
+  {
+    "ciudad": "Bogota",
+    "pais": "Colombia",
+    "latitud": "4.600",
+    "longitud": "-74.083",
+    "temperatura": 12,
+    "sensacion_termica": 11,
+    "humedad": 86,
+    "velocidad_viento": 6,
+    "descripcion": "Patchy rain nearby",
+    "fecha_extraccion": "2026-02-27T20:05:11.669280",
+    "codigo_tiempo": 176
+  },
+  {
+    "ciudad": "Cali",
+    "pais": "Colombia",
+    "latitud": "3.437",
+    "longitud": "-76.523",
+    "temperatura": 18,
+    "sensacion_termica": 18,
+    "humedad": 90,
+    "velocidad_viento": 7,
+    "descripcion": "Light rain shower",
+    "fecha_extraccion": "2026-02-27T20:05:13.068394",
+    "codigo_tiempo": 353
+  },
+  {
+    "ciudad": "Barranquilla",
+    "pais": "Colombia",
+    "latitud": "10.964",
+    "longitud": "-74.796",
+    "temperatura": 26,
+    "sensacion_termica": 29,
+    "humedad": 83,
+    "velocidad_viento": 29,
+    "descripcion": "Clear ",
+    "fecha_extraccion": "2026-02-27T20:05:13.814642",
+    "codigo_tiempo": 113
+  }
+]

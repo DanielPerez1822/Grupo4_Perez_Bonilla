@@ -1,0 +1,4 @@
+ciudad,pais,latitud,longitud,temperatura,sensacion_termica,humedad,velocidad_viento,descripcion,fecha_extraccion,codigo_tiempo
+Bogota,Colombia,4.600,-74.083,12,11,86,6,Patchy rain nearby,2026-02-27 20:05:11.669280,176
+Cali,Colombia,3.437,-76.523,18,18,90,7,Light rain shower,2026-02-27 20:05:13.068394,353
+Barranquilla,Colombia,10.964,-74.796,26,29,83,29,Clear ,2026-02-27 20:05:13.814642,113
