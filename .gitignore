@@ -1,36 +1,41 @@
-# Entorno virtual
+# ==============================
+# ENTORNOS VIRTUALES
+# ==============================
 venv/
 .env/
-
-# Variables de entorno
 .env
 .env.*
 
-# Archivos de Python
+# ==============================
+# STREAMLIT
+# ==============================
+.streamlit/secrets.toml
+
+# ==============================
+# PYTHON
+# ==============================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Archivos de logs
-*.log
-
-# Archivos de sistema
-.DS_Store
-Thumbs.db
-
-# Archivos de VS Code
-.vscode/
-
-# Archivos de pruebas
 .pytest_cache/
 
-
-
-# Carpeta de logs del proyecto
+# ==============================
+# LOGS
+# ==============================
+*.log
 logs/
 
-# Archivos generados por el ETL / visualizador
+# ==============================
+# ARCHIVOS GENERADOS (ETL)
+# ==============================
 data/*.csv
 data/*.json
 data/*.png
+
+# ==============================
+# EDITORES / SISTEMA
+# ==============================
+.vscode/
+.DS_Store
+Thumbs.db
