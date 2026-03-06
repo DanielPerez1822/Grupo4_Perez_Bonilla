@@ -2,15 +2,25 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime
 import sys
-sys.path.insert(0, '.')
+import os
+
+# ==============================
+# FIX IMPORTS SEGÚN TU ESTRUCTURA
+# ==============================
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPTS_PATH = os.path.join(ROOT_DIR, "ETL-Inicial")
+sys.path.append(SCRIPTS_PATH)
 
 from scripts.database import SessionLocal
-from scripts.models import Ciudad, RegistroClima, MetricasETL
+from scripts.models import Ciudad, RegistroClima
 
-# Configuración de la página
+# ==============================
+# CONFIG STREAMLIT
+# ==============================
+
 st.set_page_config(
     page_title="Dashboard de Clima ETL",
     page_icon="🌡️",
@@ -18,20 +28,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Título principal
 st.title("🌍 Dashboard de Clima - ETL Weatherstack")
 st.markdown("---")
 
-# Conecta a la base de datos
 db = SessionLocal()
 
 try:
-    # Obtén todos los registros de clima
-    registros = db.query(RegistroClima, Ciudad.nombre).join(
+    # ==============================
+    # CONSULTA
+    # ==============================
+    registros = db.query(
+        RegistroClima,
+        Ciudad.nombre
+    ).join(
         Ciudad
-    ).order_by(RegistroClima.fecha_extraccion.desc()).all()
+    ).order_by(
+        RegistroClima.fecha_extraccion.desc()
+    ).all()
 
-    # Transforma en DataFrame
+    if not registros:
+        st.warning("No hay datos en la base de datos.")
+        st.stop()
+
+    # ==============================
+    # DATAFRAME
+    # ==============================
     data = []
     for registro, ciudad_nombre in registros:
         data.append({
@@ -46,40 +67,59 @@ try:
 
     df = pd.DataFrame(data)
 
-    # Sidebar con filtros
+    # ==============================
+    # SIDEBAR FILTROS
+    # ==============================
+
     st.sidebar.title("🔧 Filtros")
-    
+
+    ciudades_unicas = df['Ciudad'].unique()
+
     ciudades_filtro = st.sidebar.multiselect(
         "Selecciona Ciudades:",
-        options=df['Ciudad'].unique(),
-        default=df['Ciudad'].unique()
+        options=ciudades_unicas,
+        default=ciudades_unicas
     )
-    
-    # Filtra datos
+
+    if not ciudades_filtro:
+        st.warning("Selecciona al menos una ciudad.")
+        st.stop()
+
     df_filtrado = df[df['Ciudad'].isin(ciudades_filtro)]
 
-    # Métricas principales en columnas
+    if df_filtrado.empty:
+        st.warning("No hay datos para las ciudades seleccionadas.")
+        st.stop()
+
+    # ==============================
+    # MÉTRICAS
+    # ==============================
+
     st.subheader("📈 Métricas Principales")
     col1, col2, col3, col4 = st.columns(4)
 
+    temp_promedio = df_filtrado['Temperatura'].mean()
+    humedad_promedio = df_filtrado['Humedad'].mean()
+    viento_maximo = df_filtrado['Viento'].max()
+    total_registros = len(df_filtrado)
+
     with col1:
-        temp_promedio = df_filtrado['Temperatura'].mean()
         st.metric(
             label="🌡️ Temp. Promedio",
-            value=f"{temp_promedio:.1f}°C",
-            delta=f"{temp_promedio - 20:.1f}°C vs esperado"
+            value=f"{temp_promedio:.1f}°C"
         )
 
     with col2:
-        humedad_promedio = df_filtrado['Humedad'].mean()
         st.metric(
             label="💧 Humedad Promedio",
             value=f"{humedad_promedio:.1f}%"
         )
 
     with col3:
-        viento_maximo = df_filtrado['Viento'].max()
-        ciudad_viento = df_filtrado[df_filtrado['Viento'] == viento_maximo]['Ciudad'].values[0]
+        ciudad_viento = df_filtrado.loc[
+            df_filtrado['Viento'].idxmax()
+        ]['Ciudad']
+
         st.metric(
             label="💨 Viento Máximo",
             value=f"{viento_maximo:.1f} km/h",
@@ -87,7 +127,6 @@ try:
         )
 
     with col4:
-        total_registros = len(df_filtrado)
         st.metric(
             label="📊 Total Registros",
             value=total_registros
@@ -95,38 +134,41 @@ try:
 
     st.markdown("---")
 
-    # Gráficas
+    # ==============================
+    # VISUALIZACIONES
+    # ==============================
+
     st.subheader("📉 Visualizaciones")
-    
+
     col1, col2 = st.columns(2)
 
-    # Gráfica 1: Temperatura por Ciudad
+    # Temperatura por Ciudad
     with col1:
         fig_temp = px.bar(
             df_filtrado.sort_values('Temperatura', ascending=False),
             x='Ciudad',
             y='Temperatura',
-            title="Temperatura Actual por Ciudad",
+            title="Temperatura por Ciudad",
             color='Temperatura',
             color_continuous_scale='RdYlBu_r'
         )
         st.plotly_chart(fig_temp, use_container_width=True)
 
-    # Gráfica 2: Humedad por Ciudad
+    # Humedad por Ciudad
     with col2:
         fig_humid = px.bar(
             df_filtrado,
             x='Ciudad',
             y='Humedad',
-            title="Humedad Relativa por Ciudad",
+            title="Humedad Relativa",
             color='Humedad',
             color_continuous_scale='Blues'
         )
         st.plotly_chart(fig_humid, use_container_width=True)
 
-    # Gráfica 3: Scatter Temperatura vs Humedad
+    # Scatter
     col1, col2 = st.columns(2)
-    
+
     with col1:
         fig_scatter = px.scatter(
             df_filtrado,
@@ -139,7 +181,7 @@ try:
         )
         st.plotly_chart(fig_scatter, use_container_width=True)
 
-    # Gráfica 4: Velocidad del Viento
+    # Viento
     with col2:
         fig_wind = px.bar(
             df_filtrado.sort_values('Viento', ascending=False),
@@ -153,8 +195,12 @@ try:
 
     st.markdown("---")
 
-    # Tabla de datos detallada
+    # ==============================
+    # TABLA
+    # ==============================
+
     st.subheader("📋 Datos Detallados")
+
     st.dataframe(
         df_filtrado.sort_values('Fecha', ascending=False),
         use_container_width=True,

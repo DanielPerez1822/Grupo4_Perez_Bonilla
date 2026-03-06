@@ -3,13 +3,24 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
-from sqlalchemy import func
+from sqlalchemy import func, and_
 import sys
+import os
 
-sys.path.insert(0, '.')
+# ==============================
+# FIX IMPORTS (según tu estructura)
+# ==============================
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPTS_PATH = os.path.join(ROOT_DIR, "ETL-Inicial")
+sys.path.append(SCRIPTS_PATH)
 
 from scripts.database import SessionLocal
 from scripts.models import Ciudad, RegistroClima, MetricasETL
+
+# ==============================
+# CONFIG STREAMLIT
+# ==============================
 
 st.set_page_config(
     page_title="Dashboard Avanzado Clima",
@@ -26,9 +37,9 @@ tab1, tab2, tab3, tab4 = st.tabs(
     ["📊 Vista General", "📈 Histórico", "🔍 Análisis", "📋 Métricas ETL"]
 )
 
-# ==============================
+# ==========================================================
 # TAB 1 - VISTA GENERAL
-# ==============================
+# ==========================================================
 with tab1:
     st.subheader("Datos Actuales")
 
@@ -45,25 +56,36 @@ with tab1:
     with col3:
         ultima_fecha = db.query(func.max(RegistroClima.fecha_extraccion)).scalar()
         if ultima_fecha:
-            st.metric("⏰ Última Actualización",
-                      ultima_fecha.strftime("%Y-%m-%d %H:%M"))
+            st.metric(
+                "⏰ Última Actualización",
+                ultima_fecha.strftime("%Y-%m-%d %H:%M")
+            )
         else:
             st.metric("⏰ Última Actualización", "Sin datos")
 
     st.markdown("---")
 
-    # 🔥 CONSULTA CORREGIDA PARA POSTGRESQL
+    # 🔥 Obtener último registro por ciudad (forma segura PostgreSQL)
+    subquery = db.query(
+        RegistroClima.ciudad_id,
+        func.max(RegistroClima.fecha_extraccion).label("max_fecha")
+    ).group_by(RegistroClima.ciudad_id).subquery()
+
     registros_actuales = db.query(
         Ciudad.nombre,
         RegistroClima.temperatura,
         RegistroClima.humedad,
         RegistroClima.velocidad_viento,
         RegistroClima.descripcion
-    ).join(Ciudad).distinct(
-        RegistroClima.ciudad_id
-    ).order_by(
-        RegistroClima.ciudad_id,
-        RegistroClima.fecha_extraccion.desc()
+    ).join(
+        RegistroClima,
+        Ciudad.id == RegistroClima.ciudad_id
+    ).join(
+        subquery,
+        and_(
+            RegistroClima.ciudad_id == subquery.c.ciudad_id,
+            RegistroClima.fecha_extraccion == subquery.c.max_fecha
+        )
     ).all()
 
     if registros_actuales:
@@ -99,9 +121,9 @@ with tab1:
     else:
         st.warning("No hay registros disponibles.")
 
-# ==============================
+# ==========================================================
 # TAB 2 - HISTÓRICO
-# ==============================
+# ==========================================================
 with tab2:
     st.subheader("Análisis Histórico")
 
@@ -109,22 +131,33 @@ with tab2:
 
     with col1:
         fecha_inicio = st.date_input(
-            "Desde:", value=datetime.now() - timedelta(days=7))
+            "Desde:",
+            value=datetime.now() - timedelta(days=7)
+        )
 
     with col2:
         fecha_fin = st.date_input(
-            "Hasta:", value=datetime.now())
+            "Hasta:",
+            value=datetime.now()
+        )
+
+    # Convertir date → datetime completo
+    fecha_inicio_dt = datetime.combine(fecha_inicio, datetime.min.time())
+    fecha_fin_dt = datetime.combine(fecha_fin, datetime.max.time())
 
     registros_historicos = db.query(
         RegistroClima,
         Ciudad.nombre
     ).join(Ciudad).filter(
-        RegistroClima.fecha_extraccion >= fecha_inicio,
-        RegistroClima.fecha_extraccion <= fecha_fin
+        and_(
+            RegistroClima.fecha_extraccion >= fecha_inicio_dt,
+            RegistroClima.fecha_extraccion <= fecha_fin_dt
+        )
     ).all()
 
     if registros_historicos:
         data = []
+
         for registro, ciudad_nombre in registros_historicos:
             data.append({
                 'Fecha': registro.fecha_extraccion,
@@ -144,62 +177,53 @@ with tab2:
             title='Temperatura en el Tiempo',
             markers=True
         )
-        st.plotly_chart(fig, use_container_width=True)
 
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown("---")
         st.dataframe(df_historico, use_container_width=True)
 
     else:
         st.warning("No hay datos en ese rango de fechas")
 
-# ==============================
+# ==========================================================
 # TAB 3 - ANÁLISIS ESTADÍSTICO
-# ==============================
+# ==========================================================
 with tab3:
     st.subheader("Análisis Estadístico")
 
     ciudades = db.query(Ciudad).all()
 
-    for ciudad in ciudades:
-        with st.expander(f"📍 {ciudad.nombre}"):
+    if not ciudades:
+        st.info("No hay ciudades registradas.")
+    else:
+        for ciudad in ciudades:
+            with st.expander(f"📍 {ciudad.nombre}"):
 
-            registros = db.query(
-                RegistroClima
-            ).filter_by(ciudad_id=ciudad.id).all()
+                registros = db.query(
+                    RegistroClima
+                ).filter_by(ciudad_id=ciudad.id).all()
 
-            if registros:
-                temps = [r.temperatura for r in registros]
-                humeds = [r.humedad for r in registros]
-                vientos = [r.velocidad_viento for r in registros]
+                if registros:
+                    temps = [r.temperatura for r in registros]
+                    humeds = [r.humedad for r in registros]
+                    vientos = [r.velocidad_viento for r in registros]
 
-                col1, col2, col3, col4 = st.columns(4)
+                    col1, col2, col3, col4 = st.columns(4)
 
-                with col1:
-                    st.metric(
-                        "🌡️ Temp Prom.",
-                        f"{sum(temps)/len(temps):.1f}°C"
-                    )
-                with col2:
-                    st.metric(
-                        "💧 Humedad Prom.",
-                        f"{sum(humeds)/len(humeds):.1f}%"
-                    )
-                with col3:
-                    st.metric(
-                        "💨 Viento Prom.",
-                        f"{sum(vientos)/len(vientos):.1f} km/h"
-                    )
-                with col4:
-                    st.metric(
-                        "📊 Registros",
-                        len(registros)
-                    )
-            else:
-                st.info("Sin registros")
+                    col1.metric("🌡️ Temp Prom.",
+                                f"{sum(temps)/len(temps):.1f}°C")
+                    col2.metric("💧 Humedad Prom.",
+                                f"{sum(humeds)/len(humeds):.1f}%")
+                    col3.metric("💨 Viento Prom.",
+                                f"{sum(vientos)/len(vientos):.1f} km/h")
+                    col4.metric("📊 Registros",
+                                len(registros))
+                else:
+                    st.info("Sin registros")
 
-# ==============================
+# ==========================================================
 # TAB 4 - MÉTRICAS ETL
-# ==============================
+# ==========================================================
 with tab4:
     st.subheader("Métricas de Ejecución ETL")
 
@@ -217,7 +241,7 @@ with tab4:
                 'Ciudades Procesadas': m.ciudades_procesadas,
                 'Registros Insertados': m.registros_insertados,
                 'Errores': m.errores,
-                'Tiempo (s)': round(m.tiempo_ejecucion, 2)
+                'Tiempo (s)': round(m.tiempo_ejecucion or 0, 2)
             })
 
         df_metricas = pd.DataFrame(data)

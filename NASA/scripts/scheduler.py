@@ -3,10 +3,10 @@
 import schedule
 import time
 import logging
-from extractor import NasaExtractor
+from extractor import extraer_datos  # función simple
 
 # ==============================
-# Configuración de logging
+# Logging
 # ==============================
 logging.basicConfig(
     level=logging.INFO,
@@ -16,20 +16,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ==============================
-# Función que ejecuta el ETL
+# Job ETL
 # ==============================
 def ejecutar_etl_nasa():
     logger.info("🚀 Ejecutando ETL NASA programado...")
 
     try:
-        extractor = NasaExtractor()
-        asteroides, apod = extractor.ejecutar_extraccion()
-
-        logger.info(f"Asteroides extraídos: {len(asteroides)}")
-
-        if apod:
-            logger.info("APOD extraído correctamente")
-
+        extraer_datos()  # guarda en PostgreSQL
         logger.info("✅ ETL NASA finalizado correctamente\n")
 
     except Exception as e:
@@ -39,20 +32,19 @@ def ejecutar_etl_nasa():
 # ==============================
 # EJECUCIÓN INICIAL
 # ==============================
-ejecutar_etl_nasa()
 
-# ==============================
-# PROGRAMACIÓN
-# ==============================
+if __name__ == "__main__":
 
-# 🔁 Cada 1 hora (recomendado)
-# schedule.every(1).hours.do(ejecutar_etl_nasa)
+    ejecutar_etl_nasa()  # ejecuta una vez al iniciar
 
-# Si quieres pruebas rápidas:
-schedule.every(30).seconds.do(ejecutar_etl_nasa)
+    # 🔁 Producción
+    schedule.every(1).hours.do(ejecutar_etl_nasa)
 
-logger.info("⏰ Scheduler NASA iniciado...")
+    # 🧪 Pruebas rápidas
+    # schedule.every(30).seconds.do(ejecutar_etl_nasa)
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    logger.info("⏰ Scheduler NASA iniciado...")
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
