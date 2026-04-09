@@ -1,7 +1,7 @@
 import schedule
 import time
 import logging
-from scripts.extractor import WeatherstackExtractor
+from scripts.extractor import WeatherstackETL
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,7 +11,7 @@ logging.basicConfig(
 def ejecutar_etl():
     logging.info("Iniciando ETL...")
     try:
-        extractor = WeatherstackExtractor()
+        extractor = WeatherstackETL()
         extractor.ejecutar_extraccion()
         logging.info("ETL finalizado correctamente")
     except Exception as e:

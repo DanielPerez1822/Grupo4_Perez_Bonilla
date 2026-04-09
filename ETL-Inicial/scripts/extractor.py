@@ -1,226 +1,201 @@
 #!/usr/bin/env python3
 import os
-import requests
-import json
-import pandas as pd
 import time
-from datetime import datetime
-from dotenv import load_dotenv
 import logging
+from dotenv import load_dotenv
+import requests
 
 from scripts.database import SessionLocal
 from scripts.models import Ciudad, RegistroClima, MetricasETL
 
-# Cargar variables de entorno
 load_dotenv()
 
-# Crear carpetas necesarias
-os.makedirs("logs", exist_ok=True)
-os.makedirs("data", exist_ok=True)
-
-# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/etl.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
 
 
-class WeatherstackExtractor:
+class WeatherstackETL:
     def __init__(self):
-        self.api_key = os.getenv('API_KEY')
-        self.base_url = os.getenv('WEATHERSTACK_BASE_URL')
-        self.ciudades = os.getenv('CIUDADES').split(',')
+        self.api_key = os.getenv("API_KEY")
+        self.base_url = os.getenv("WEATHERSTACK_BASE_URL")
+        self.ciudades = [c.strip() for c in os.getenv("CIUDADES", "").split(",") if c.strip()]
 
         if not self.api_key:
-            raise ValueError("API_KEY no configurada en .env")
+            raise ValueError("API_KEY no está configurada en el archivo .env")
 
         if not self.base_url:
-            raise ValueError("WEATHERSTACK_BASE_URL no configurada en .env")
+            raise ValueError("WEATHERSTACK_BASE_URL no está configurada en el archivo .env")
+
+        if not self.ciudades:
+            raise ValueError("CIUDADES no está configurado en el archivo .env")
+
+        self.db = SessionLocal()
+        self.tiempo_inicio = time.time()
+
+        self.registros_extraidos = 0
+        self.registros_guardados = 0
+        self.registros_fallidos = 0
 
     def extraer_clima(self, ciudad):
+        url = f"{self.base_url}/current"
+        params = {
+            "access_key": self.api_key,
+            "query": ciudad
+        }
+
         try:
-            url = f"{self.base_url}/current"
-            params = {
-                'access_key': self.api_key,
-                'query': ciudad.strip()
-            }
-
             response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
 
-            if 'error' in data:
-                logger.error(f"❌ Error en API para {ciudad}: {data['error']['info']}")
+            # Intentar leer JSON aunque venga error HTTP
+            try:
+                data = response.json()
+            except Exception:
+                data = {}
+
+            if response.status_code == 429:
+                logger.error(f"⚠️ Límite de solicitudes excedido para {ciudad}")
+                self.registros_fallidos += 1
+                return None
+
+            if response.status_code == 400:
+                logger.error(f"❌ Bad Request para {ciudad}: {data}")
+                self.registros_fallidos += 1
+                return None
+
+            response.raise_for_status()
+
+            if "error" in data:
+                logger.error(f"❌ Error de API para {ciudad}: {data['error']}")
+                self.registros_fallidos += 1
                 return None
 
             logger.info(f"✅ Datos extraídos para {ciudad}")
+            self.registros_extraidos += 1
             return data
 
-        except Exception as e:
-            logger.error(f"❌ Error extrayendo datos para {ciudad}: {str(e)}")
+        except requests.exceptions.Timeout:
+            logger.error(f"⏱ Timeout al consultar {ciudad}")
+            self.registros_fallidos += 1
             return None
 
-    def procesar_respuesta(self, response_data):
-        try:
-            current = response_data.get('current', {})
-            location = response_data.get('location', {})
-
-            return {
-                'ciudad': location.get('name'),
-                'pais': location.get('country'),
-                'latitud': location.get('lat'),
-                'longitud': location.get('lon'),
-                'temperatura': current.get('temperature'),
-                'sensacion_termica': current.get('feelslike'),
-                'humedad': current.get('humidity'),
-                'velocidad_viento': current.get('wind_speed'),
-                'descripcion': current.get('weather_descriptions', ['N/A'])[0],
-                'fecha_extraccion': datetime.now(),
-                'codigo_tiempo': current.get('weather_code')
-            }
-
-        except Exception as e:
-            logger.error(f"❌ Error procesando respuesta: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"❌ Error HTTP para {ciudad}: {e}")
+            self.registros_fallidos += 1
             return None
 
-    def guardar_en_bd(self, datos):
-        db = SessionLocal()
+        except Exception as e:
+            logger.error(f"❌ Error inesperado para {ciudad}: {e}")
+            self.registros_fallidos += 1
+            return None
+
+    def procesar(self, data):
+        location = data.get("location", {})
+        current = data.get("current", {})
+
+        descripcion = "N/A"
+        weather_descriptions = current.get("weather_descriptions")
+        if isinstance(weather_descriptions, list) and weather_descriptions:
+            descripcion = weather_descriptions[0]
+
+        return {
+            "ciudad": location.get("name"),
+            "pais": location.get("country"),
+            "latitud": float(location["lat"]) if location.get("lat") is not None else None,
+            "longitud": float(location["lon"]) if location.get("lon") is not None else None,
+            "temperatura": current.get("temperature"),
+            "sensacion_termica": current.get("feelslike"),
+            "humedad": current.get("humidity"),
+            "velocidad_viento": current.get("wind_speed"),
+            "descripcion": descripcion,
+            "codigo_tiempo": current.get("weather_code")
+        }
+
+    def guardar(self, datos):
         try:
-            ciudad_db = db.query(Ciudad).filter_by(
-                nombre=datos['ciudad']
+            ciudad = self.db.query(Ciudad).filter_by(
+                nombre=datos["ciudad"]
             ).first()
 
-            if not ciudad_db:
-                ciudad_db = Ciudad(
-                    nombre=datos['ciudad'],
-                    pais=datos['pais']
+            if not ciudad:
+                ciudad = Ciudad(
+                    nombre=datos["ciudad"],
+                    pais=datos["pais"],
+                    latitud=datos["latitud"],
+                    longitud=datos["longitud"]
                 )
-                db.add(ciudad_db)
-                db.commit()
-                db.refresh(ciudad_db)
-                logger.info(f"🏙 Ciudad creada: {datos['ciudad']}")
+                self.db.add(ciudad)
+                self.db.flush()
 
-            nuevo_registro = RegistroClima(
-                ciudad_id=ciudad_db.id,
-                temperatura=datos['temperatura'],
-                sensacion_termica=datos['sensacion_termica'],
-                humedad=datos['humedad'],
-                velocidad_viento=datos['velocidad_viento'],
-                descripcion=datos['descripcion'],
-                fecha_extraccion=datos['fecha_extraccion']
+            registro = RegistroClima(
+                ciudad_id=ciudad.id,
+                temperatura=datos["temperatura"],
+                sensacion_termica=datos["sensacion_termica"],
+                humedad=datos["humedad"],
+                velocidad_viento=datos["velocidad_viento"],
+                descripcion=datos["descripcion"],
+                codigo_tiempo=datos["codigo_tiempo"]
             )
 
-            db.add(nuevo_registro)
-            db.commit()
+            self.db.add(registro)
+            self.db.commit()
 
+            self.registros_guardados += 1
             logger.info(f"💾 Registro guardado para {datos['ciudad']}")
-            return True
 
         except Exception as e:
-            db.rollback()
-            logger.error(f"❌ Error guardando en BD: {str(e)}")
-            return False
+            self.db.rollback()
+            self.registros_fallidos += 1
+            logger.error(f"❌ Error guardando datos para {datos.get('ciudad')}: {e}")
 
-        finally:
-            db.close()
-
-    def ejecutar_extraccion(self):
-
-        inicio = time.time()
-
-        ciudades_procesadas = 0
-        registros_insertados = 0
-        errores = 0
-
-        datos_extraidos = []
-
-        logger.info(f"🚀 Iniciando extracción para {len(self.ciudades)} ciudades...")
-
-        for ciudad in self.ciudades:
-
-            ciudades_procesadas += 1
-
-            response = self.extraer_clima(ciudad)
-
-            if response:
-                datos_procesados = self.procesar_respuesta(response)
-
-                if datos_procesados:
-                    datos_extraidos.append(datos_procesados)
-
-                    if self.guardar_en_bd(datos_procesados):
-                        registros_insertados += 1
-                    else:
-                        errores += 1
-                else:
-                    errores += 1
-            else:
-                errores += 1
-
-        tiempo_total = round(time.time() - inicio, 2)
-
-        # Determinar estado
-        if errores == 0:
-            estado = "SUCCESS"
-        elif registros_insertados > 0:
-            estado = "PARTIAL_SUCCESS"
-        else:
-            estado = "FAILED"
-
-        # Guardar métricas
-        db = SessionLocal()
+    def guardar_metricas(self):
         try:
+            tiempo = time.time() - self.tiempo_inicio
+            estado = "SUCCESS" if self.registros_fallidos == 0 else "PARTIAL"
+
             metricas = MetricasETL(
-                ciudades_procesadas=ciudades_procesadas,
-                registros_insertados=registros_insertados,
-                errores=errores,
-                tiempo_ejecucion=tiempo_total,
-                estado=estado
+                registros_extraidos=self.registros_extraidos,
+                registros_guardados=self.registros_guardados,
+                registros_fallidos=self.registros_fallidos,
+                tiempo_ejecucion_segundos=tiempo,
+                estado=estado,
+                mensaje=(
+                    f"Extraídos: {self.registros_extraidos}, "
+                    f"Guardados: {self.registros_guardados}, "
+                    f"Fallidos: {self.registros_fallidos}"
+                )
             )
 
-            db.add(metricas)
-            db.commit()
-
-            logger.info("📊 Métricas ETL guardadas correctamente")
+            self.db.add(metricas)
+            self.db.commit()
+            logger.info("📊 Métricas guardadas correctamente")
 
         except Exception as e:
-            db.rollback()
-            logger.error(f"❌ Error guardando métricas: {str(e)}")
+            self.db.rollback()
+            logger.error(f"❌ Error guardando métricas: {e}")
+
+    def ejecutar(self):
+        try:
+            logger.info(f"🚀 Iniciando ETL para {len(self.ciudades)} ciudades...")
+
+            for ciudad in self.ciudades:
+                data = self.extraer_clima(ciudad)
+
+                if data:
+                    datos = self.procesar(data)
+                    self.guardar(datos)
+
+                time.sleep(2)
+
+            self.guardar_metricas()
 
         finally:
-            db.close()
-
-        logger.info(f"⏱ Tiempo total ejecución: {tiempo_total} segundos")
-
-        return datos_extraidos
+            self.db.close()
 
 
 if __name__ == "__main__":
-    try:
-        extractor = WeatherstackExtractor()
-        datos = extractor.ejecutar_extraccion()
-
-        with open('data/clima_raw.json', 'w') as f:
-            json.dump(
-                [dict(d, fecha_extraccion=d['fecha_extraccion'].isoformat()) for d in datos],
-                f,
-                indent=2
-            )
-
-        df = pd.DataFrame(datos)
-        df.to_csv('data/clima.csv', index=False)
-
-        print("\n" + "="*50)
-        print("RESUMEN DE EXTRACCIÓN")
-        print("="*50)
-        print(df.to_string())
-        print("="*50)
-
-    except Exception as e:
-        logger.error(f"❌ Error general en extracción: {str(e)}")
+    etl = WeatherstackETL()
+    etl.ejecutar()
