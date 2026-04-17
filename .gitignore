@@ -39,3 +39,14 @@ data/*.png
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Variables de entorno locales
+.env
+.env.local
+.streamlit/secrets.toml
+.jupyter/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

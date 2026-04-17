@@ -1,6 +1,6 @@
 ciudad,pais,region,latitud,longitud,temperatura,sensacion_termica,humedad,velocidad_viento,direccion_viento,presion,visibilidad,indice_uv,descripcion,codigo_tiempo,hora_local,timestamp,categoria_temperatura,categoria_viento,diferencial_termico,fecha_procesamiento
-Bogota,Colombia,Cundinamarca,4.6,-74.083,17,17,63,6,SSE,1029,10,6,Shower In Vicinity,122,2026-04-09 13:15:00,2026-04-09T18:14:29.788016,Templado,Brisa ligera,0,2026-04-09 13:14:37
-Medellin,Colombia,Antioquia,6.291,-75.536,21,21,69,6,E,1026,10,13,Partly cloudy,116,2026-04-09 13:14:00,2026-04-09T18:14:31.441905,Cálido,Brisa ligera,0,2026-04-09 13:14:37
-Cali,Colombia,Valle del Cauca,3.437,-76.523,31,33,52,4,NE,1008,9,14,Patchy rain nearby,176,2026-04-09 13:14:00,2026-04-09T18:14:33.105913,Caluroso,Brisa ligera,-2,2026-04-09 13:14:37
-Barranquilla,Colombia,Atlantico,10.964,-74.796,34,44,63,24,NNE,1009,10,12,Partly cloudy,116,2026-04-09 13:14:00,2026-04-09T18:14:34.546171,Caluroso,Viento moderado,-10,2026-04-09 13:14:37
-Cartagena,Colombia,Bolivar Department,10.4,-75.514,31,38,75,27,N,1009,10,12,Thundery outbreaks in nearby,200,2026-04-09 13:15:00,2026-04-09T18:14:36.005059,Caluroso,Viento moderado,-7,2026-04-09 13:14:37
+Bogota,Colombia,Cundinamarca,4.6,-74.083,18,18,60,6,SSE,1028,10,6,Shower In Vicinity,122,2026-04-09 13:28:00,2026-04-09T18:27:53.278841,Templado,Brisa ligera,0,2026-04-09 13:28:07
+Medellin,Colombia,Antioquia,6.291,-75.536,22,24,65,6,E,1025,10,13,Partly cloudy,116,2026-04-09 13:27:00,2026-04-09T18:27:54.757128,Cálido,Brisa ligera,-2,2026-04-09 13:28:07
+Cali,Colombia,Valle del Cauca,3.437,-76.523,31,33,52,4,NE,1008,9,14,Patchy rain nearby,176,2026-04-09 13:27:00,2026-04-09T18:27:56.245914,Caluroso,Brisa ligera,-2,2026-04-09 13:28:07
+Barranquilla,Colombia,Atlantico,10.964,-74.796,34,44,63,24,NNE,1008,10,12,Partly cloudy,116,2026-04-09 13:28:00,2026-04-09T18:27:57.782867,Caluroso,Viento moderado,-10,2026-04-09 13:28:07
+Cartagena,Colombia,Bolivar Department,10.4,-75.514,31,39,75,27,N,1008,10,12,Thundery outbreaks in nearby,200,2026-04-09 13:27:00,2026-04-09T18:27:59.278914,Caluroso,Viento moderado,-8,2026-04-09 13:28:07

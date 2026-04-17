@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Date
-from sqlalchemy.orm import declarative_base
 from datetime import datetime
-
 # ==============================
 # Base Declarativa
 # ==============================
-Base = declarative_base()
+from scripts.database import Base
 
 # ==============================
 # Tabla 1: Asteroides (principal ETL)
