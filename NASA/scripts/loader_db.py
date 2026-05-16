@@ -147,7 +147,7 @@ class NasaLoaderDB:
                 self.guardar_metricas(db, "FAILED")
                 return False
 
-
+a
 if __name__ == "__main__":
     loader = NasaLoaderDB()
     exito = loader.ejecutar()
